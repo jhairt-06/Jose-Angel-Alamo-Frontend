@@ -194,7 +194,16 @@ const AdminLogin = ({ onLogin }) => {
               onChange={(e) => setCredentials({...credentials, password: e.target.value})}
             />
           </div>
-
+          <div className="text-right">
+        <a 
+            href="https://joseangelalamo.pythonanywhere.com/reset_password/" 
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-[#C62828] hover:underline"
+        >
+            ¿Olvidaste tu contraseña?
+        </a>
+      </div>
           <div className="flex flex-col gap-3">
             <button 
               type="submit"
