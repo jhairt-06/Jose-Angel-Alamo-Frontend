@@ -169,12 +169,19 @@ const NewsManager = ({ token }) => {
 
   // --- API: BORRAR NOTICIA (REQUIERE TOKEN) ---
   const handleDelete = async (id) => {
-    if (!window.confirm("¿Estás seguro de eliminar esta noticia permanentemente?")) return;
+// Agrega este console.log para depurar
+    console.log("Intentando borrar noticia con ID:", id); 
+
+    if (!id) {
+        alert("Error: No se pudo identificar la noticia a borrar.");
+        return;
+    }
+
+    if (!window.confirm("¿Estás seguro...?")) return;
 
     try {
-      const response = await fetch(`${API_URL}/api/noticias/`, {
+      const response = await fetch(`https://joseangelalamo.pythonanywhere.com/api/noticias/${id}/`, {
         method: "DELETE",
-        // HEADER DE AUTORIZACIÓN
         headers: {
             "Authorization": `Token ${token}`
         },
