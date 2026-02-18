@@ -13,7 +13,7 @@ import {
 
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import { API_URL } from "frontend/src/src/config.js"
+import { API_URL } from "../config";
 
 const AdmissionsPage = () => {
   const [archivos, setArchivos] = useState([]);

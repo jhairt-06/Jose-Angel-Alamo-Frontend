@@ -13,7 +13,7 @@ import {
 
 import NewsManager from "../components/NewsManager";
 import FilesManager from "../components/FilesManager";
-import { API_URL } from "frontend/src/src/config.js"
+import { API_URL } from "../config";
 
 const theme = {
   primary: "bg-[#1B3A57]",

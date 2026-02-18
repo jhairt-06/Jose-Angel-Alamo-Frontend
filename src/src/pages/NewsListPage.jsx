@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Search, Calendar, User, ArrowRight, Filter, GraduationCap } from "lucide-react";
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
-import { API_URL } from "frontend/src/src/config.js"
+import { API_URL } from "../config";
 
 const NewsListPage = () => {
   const [noticias, setNoticias] = useState([]);

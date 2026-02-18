@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import Footer from "../../components/Footer";
 import NavbarScroll from "../../components/NavbarScroll";
-import { API_URL } from "frontend/src/src/config.js"
+import { API_URL } from "../../config";
 
 const SchoolHomePage = () => {
   const [noticias, setNoticias] = useState([]);
