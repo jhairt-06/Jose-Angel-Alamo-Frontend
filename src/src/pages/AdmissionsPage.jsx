@@ -28,7 +28,7 @@ const AdmissionsPage = () => {
   const fetchArchivos = async () => {
 try {
       // Apuntar al endpoint correcto
-      const endpoint = `${API_BASE_URL}/api/archivos/`;
+      const endpoint = `${API_URL}/api/archivos/`;
       console.log("Intentando cargar archivos desde:", endpoint);
 
       const response = await fetch(endpoint);
@@ -53,7 +53,7 @@ try {
     // Si la URL ya empieza con http (es absoluta), se queda igual
     if (url.startsWith("http")) return url;
     // Si es relativa (ej: /media/...), le pone el dominio del backend
-    return `${API_BASE_URL}${url}`;
+    return `${API_URL}${url}`;
   };
 
   // Filtrar archivos por categoría
