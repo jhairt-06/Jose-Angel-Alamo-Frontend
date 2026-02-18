@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 
 import toast from 'react-hot-toast'; 
-import { API_URL } from "frontend/src/src/config.js"
+import { API_URL } from "../config";
 
 const theme = {
   primary: "bg-[#1B3A57]",
