@@ -10,8 +10,9 @@ import {
   Loader2,
 } from "lucide-react";
 
+// Si no tienes react-hot-toast instalado, usa alert o instálalo con: npm install react-hot-toast
 import toast from 'react-hot-toast'; 
-import { API_URL } from "../config";
+import { API_URL } from "../config"; // Importamos la URL base
 
 const theme = {
   primary: "bg-[#1B3A57]",
@@ -20,7 +21,6 @@ const theme = {
   bgLight: "bg-[#FDFBF7]",
 };
 
-// Recibe el token
 const FilesManager = ({ token }) => {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,19 +35,25 @@ const FilesManager = ({ token }) => {
 
   const fileInputRef = useRef(null);
 
+  // --- AQUÍ DEFINIMOS EL ENDPOINT COMPLETO ---
+  // API_URL es "https://...com" y le sumamos "/api/archivos/"
+  const ENDPOINT = `${API_URL}/api/archivos/`;
+
   const categories = ["Planilla reingreso", "Planilla nuevo ingreso", "Otro"];
 
-  // 1. CARGAR ARCHIVOS (GET es público)
   useEffect(() => {
     fetchFiles();
   }, []);
 
   const fetchFiles = async () => {
     try {
-      const response = await fetch(API_URL);
+      // USAMOS LA VARIABLE ENDPOINT
+      const response = await fetch(ENDPOINT);
       if (response.ok) {
         const data = await response.json();
         setFiles(data);
+      } else {
+        console.error("Error fetching files:", response.status);
       }
     } catch (error) {
       console.error("Error cargando archivos:", error);
@@ -56,7 +62,6 @@ const FilesManager = ({ token }) => {
     }
   };
 
-  // 2. MANEJAR SELECCIÓN DE ARCHIVO
   const handleFileSelect = (e) => {
     const selectedFile = e.target.files[0];
     if (!selectedFile) return;
@@ -90,7 +95,6 @@ const FilesManager = ({ token }) => {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  // 3. SUBIR ARCHIVO (REQUIERE TOKEN)
   const handleConfirmUpload = async (e) => {
     e.preventDefault();
 
@@ -110,9 +114,9 @@ const FilesManager = ({ token }) => {
     formData.append("archivo_pdf", uploadState.file); 
 
     try {
-      const response = await fetch(API_URL, {
+      // USAMOS ENDPOINT AQUÍ TAMBIÉN
+      const response = await fetch(ENDPOINT, {
         method: "POST",
-        // 2. AÑADIMOS EL HEADER DE AUTORIZACIÓN
         headers: {
             "Authorization": `Token ${token}`
         },
@@ -120,7 +124,8 @@ const FilesManager = ({ token }) => {
       });
 
       if (response.ok) {
-        toast.success("Archivo subido correctamente");
+        // Usamos alert por si no tienes toast configurado en el root
+        alert("Archivo subido correctamente"); 
         handleCancelUpload();
         fetchFiles();
       } else {
@@ -137,14 +142,13 @@ const FilesManager = ({ token }) => {
     }
   };
 
-  // 4. ELIMINAR ARCHIVO 
   const handleDelete = async (id) => {
     if (!window.confirm("¿Estás seguro de eliminar este archivo?")) return;
 
     try {
-      const response = await fetch(`${API_URL}${id}/`, {
+      // USAMOS ENDPOINT + ID
+      const response = await fetch(`${ENDPOINT}${id}/`, {
         method: "DELETE",
-        // 3. HEADER DE AUTORIZACIÓN
         headers: {
             "Authorization": `Token ${token}`
         },
@@ -153,28 +157,26 @@ const FilesManager = ({ token }) => {
       if (response.ok) {
         setFiles(files.filter((f) => f.id !== id));
       } else {
-        toast.error("No se pudo eliminar. Verifique su sesión.");
+        alert("No se pudo eliminar. Verifique su sesión.");
       }
     } catch (error) {
       console.error("Error borrando:", error);
     }
   };
 
-  // Helper para formatear fecha
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("es-VE");
   };
 
   return (
     <div className="bg-white rounded-lg shadow-md flex flex-col h-full min-h-[600px]">
-      {/* --- SECCIÓN DE SUBIDA --- */}
+      {/* SECCIÓN DE SUBIDA */}
       <div className="p-8 border-b border-gray-200 bg-gray-50">
         <h3 className={`text-xl font-serif font-bold ${theme.primaryText} mb-4`}>
           Subir Nueva Planilla o Archivo
         </h3>
 
         {!uploadState.file ? (
-          // ESTADO 1: Dropzone
           <div
             onClick={() => fileInputRef.current.click()}
             className="border-2 border-dashed border-gray-300 rounded-xl p-10 flex flex-col items-center justify-center text-center bg-white hover:border-[#1B3A57] hover:bg-blue-50 transition-all cursor-pointer group"
@@ -202,7 +204,6 @@ const FilesManager = ({ token }) => {
             />
           </div>
         ) : (
-          // ESTADO 2: Formulario
           <div className="bg-white border border-blue-200 rounded-xl p-6 shadow-sm animate-fade-in">
             <div className="flex justify-between items-start mb-6">
               <div className="flex items-center gap-3">
@@ -299,7 +300,7 @@ const FilesManager = ({ token }) => {
         )}
       </div>
 
-      {/* --- LISTA DE ARCHIVOS --- */}
+      {/* LISTA DE ARCHIVOS */}
       <div className="p-6 flex-1 overflow-auto">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-serif font-bold text-gray-800">
@@ -330,7 +331,7 @@ const FilesManager = ({ token }) => {
               ) : files.length === 0 ? (
                 <tr>
                   <td colSpan="4" className="text-center py-8 text-gray-400">
-                    No hay archivos.
+                    No hay archivos subidos.
                   </td>
                 </tr>
               ) : (
@@ -386,7 +387,7 @@ const FilesManager = ({ token }) => {
                         <button
                           onClick={() => handleDelete(file.id)}
                           className="text-gray-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-full transition"
-                          title="Eliminar archivo permanentemente"
+                          title="Eliminar"
                         >
                           <Trash2 size={18} />
                         </button>
