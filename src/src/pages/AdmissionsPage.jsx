@@ -26,17 +26,34 @@ const AdmissionsPage = () => {
   }, []);
 
   const fetchArchivos = async () => {
-    try {
-      const response = await fetch(API_URL);
+try {
+      // Apuntar al endpoint correcto
+      const endpoint = `${API_BASE_URL}/api/archivos/`;
+      console.log("Intentando cargar archivos desde:", endpoint);
+
+      const response = await fetch(endpoint);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log("Datos recibidos:", data); // Para depurar
         setArchivos(data);
+      } else {
+        console.error("Error en la respuesta del servidor:", response.status);
       }
     } catch (error) {
       console.error("Error cargando archivos:", error);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Función para arreglar la URL del PDF si viene relativa
+  const getFileUrl = (url) => {
+    if (!url) return "#";
+    // Si la URL ya empieza con http (es absoluta), se queda igual
+    if (url.startsWith("http")) return url;
+    // Si es relativa (ej: /media/...), le pone el dominio del backend
+    return `${API_BASE_URL}${url}`;
   };
 
   // Filtrar archivos por categoría
