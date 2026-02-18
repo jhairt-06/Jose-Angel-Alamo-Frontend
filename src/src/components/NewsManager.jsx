@@ -58,7 +58,7 @@ const NewsManager = ({ token }) => {
   // --- TRAER CATEGORÍAS (GET es público) ---
   const fetchCategorias = async () => {
     try {
-      const response = await fetchfetch(`${API_URL}/api/categorias/`)
+      const response = await fetch(`${API_URL}/api/categorias/`)
       if (response.ok) {
         const data = await response.json();
         setCategorias(data);
