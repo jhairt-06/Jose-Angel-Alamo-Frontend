@@ -164,7 +164,8 @@ const NewsDetailPage = () => {
               </header>
 
               <div className="blog-content prose prose-slate max-w-none">
-                  <div dangerouslySetInnerHTML={{ __html: post.contenido }} />
+                  {/* Usamos una expresión regular (/\n/g) para buscar todos los saltos de línea y reemplazarlos por <br /> */}
+                  <div dangerouslySetInnerHTML={{ __html: post.contenido.replace(/\n/g, '<br />') }} />
               </div>
               
               <footer className="mt-16 pt-8 border-t border-slate-100 flex flex-col items-center text-center">
