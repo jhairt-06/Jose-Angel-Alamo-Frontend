@@ -8,6 +8,7 @@ import {
   Italic,
   List,
   Type,
+  Edit, 
 } from "lucide-react";
 
 import toast from 'react-hot-toast';
@@ -19,13 +20,15 @@ const theme = {
   accent: "bg-[#C62828]",
 };
 
-// 1. RECIBE EL TOKEN AQUÍ
 const NewsManager = ({ token }) => {
   // --- ESTADOS ---
   const [categorias, setCategorias] = useState([]);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
+  
+  // NUEVO ESTADO: Rastrea si estamos editando una noticia
+  const [editingId, setEditingId] = useState(null);
   
   const [formData, setFormData] = useState({
     titulo: "",
@@ -42,7 +45,6 @@ const NewsManager = ({ token }) => {
     fetchPosts();
   }, []);
 
-  // ---  TRAER NOTICIAS (GET es público, no necesita token) ---
   const fetchPosts = async () => {
     try {
       const response = await fetch(`${API_URL}/api/noticias/`)
@@ -55,14 +57,13 @@ const NewsManager = ({ token }) => {
     }
   };
 
-  // --- TRAER CATEGORÍAS (GET es público) ---
   const fetchCategorias = async () => {
     try {
       const response = await fetch(`${API_URL}/api/categorias/`)
       if (response.ok) {
         const data = await response.json();
         setCategorias(data);
-        if (data.length > 0) {
+        if (data.length > 0 && !editingId) {
           setFormData((prev) => ({ ...prev, categoria: data[0].id }));
         }
       }
@@ -90,6 +91,7 @@ const NewsManager = ({ token }) => {
         return;
     }
 
+    setEditingId(null); 
     setFormData({
       titulo: "",
       categoria: categorias.length > 0 ? categorias[0].id : "",
@@ -97,6 +99,19 @@ const NewsManager = ({ token }) => {
       imagen: null,
     });
     setPreviewUrl(null);
+  };
+
+  // --- CARGAR DATOS PARA EDITAR ---
+  const handleEditClick = (post) => {
+    setEditingId(post.id);
+    setFormData({
+      titulo: post.titulo,
+      categoria: post.categoria, 
+      contenido: post.contenido,
+      imagen: null, 
+    });
+    setPreviewUrl(post.imagen); 
+    window.scrollTo({ top: 0, behavior: "smooth" }); // Subimos la pantalla al formulario
   };
 
   // --- EDITOR DE TEXTO ---
@@ -123,7 +138,7 @@ const NewsManager = ({ token }) => {
     }, 0);
   };
 
-  // --- API: CREAR NOTICIA (REQUIERE TOKEN) ---
+  // --- CREAR O ACTUALIZAR NOTICIA ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -132,14 +147,21 @@ const NewsManager = ({ token }) => {
     dataToSend.append("titulo", formData.titulo);
     dataToSend.append("contenido", formData.contenido);
     dataToSend.append("categoria", formData.categoria);
-    if (formData.imagen) {
+    
+    // Solo se envia la imagen si el usuario subió un archivo nuevo
+    if (formData.imagen instanceof File) {
       dataToSend.append("imagen", formData.imagen);
     }
 
+    // Se decide si se usa POST (crear) o PATCH (actualizar)
+    const method = editingId ? "PATCH" : "POST";
+    const url = editingId 
+        ? `${API_URL}/api/noticias/${editingId}/` 
+        : `${API_URL}/api/noticias/`;
+
     try {
-      const response = await fetch(`${API_URL}/api/noticias/`, {
-        method: "POST",
-        // 2. AÑADIMOS EL HEADER DE AUTORIZACIÓN
+      const response = await fetch(url, {
+        method: method,
         headers: {
             "Authorization": `Token ${token}`
         },
@@ -147,7 +169,8 @@ const NewsManager = ({ token }) => {
       });
 
       if (response.ok) {
-        toast.success("Noticia publicada con éxito");
+        toast.success(editingId ? "Noticia actualizada con éxito" : "Noticia publicada con éxito");
+        setEditingId(null);
         setFormData({
           titulo: "",
           categoria: categorias.length > 0 ? categorias[0].id : "",
@@ -157,7 +180,7 @@ const NewsManager = ({ token }) => {
         setPreviewUrl(null);
         fetchPosts(); 
       } else {
-        toast.error("Error al publicar. Verifique los campos o su sesión.");
+        toast.error("Error al guardar. Verifique los campos o su sesión.");
       }
     } catch (error) {
       console.error("Error:", error);
@@ -167,20 +190,17 @@ const NewsManager = ({ token }) => {
     }
   };
 
-  // --- API: BORRAR NOTICIA (REQUIERE TOKEN) ---
+  // --- API: BORRAR NOTICIA ---
   const handleDelete = async (id) => {
-// Agrega este console.log para depurar
-    console.log("Intentando borrar noticia con ID:", id); 
-
     if (!id) {
-        alert("Error: No se pudo identificar la noticia a borrar.");
+        toast.error("Error: No se pudo identificar la noticia a borrar.");
         return;
     }
 
-    if (!window.confirm("¿Estás seguro...?")) return;
+    if (!window.confirm("¿Estás seguro de eliminar esta noticia permanentemente?")) return;
 
     try {
-      const response = await fetch(`https://joseangelalamo.pythonanywhere.com/api/noticias/${id}/`, {
+      const response = await fetch(`${API_URL}/api/noticias/${id}/`, {
         method: "DELETE",
         headers: {
             "Authorization": `Token ${token}`
@@ -188,7 +208,10 @@ const NewsManager = ({ token }) => {
       });
       
       if (response.ok) {
-          fetchPosts(); 
+          fetchPosts();
+          toast.success("Noticia eliminada");
+          // Si estamos borrando la noticia que teníamos abierta para editar, limpiamos el formulario
+          if (editingId === id) handleCancel();
       } else {
           toast.error("No se pudo eliminar la noticia. Verifique su sesión.");
       }
@@ -201,9 +224,13 @@ const NewsManager = ({ token }) => {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       {/* --- FORMULARIO --- */}
       <div className="lg:col-span-2 space-y-6">
-        <div className="bg-white p-6 rounded-lg shadow-md">
+        <div className={`bg-white p-6 rounded-lg shadow-md border-t-4 ${editingId ? 'border-yellow-500' : 'border-transparent'}`}>
           <h3 className="text-lg font-serif font-bold text-gray-800 mb-6 flex items-center gap-2">
-            <Plus size={20} className="text-red-600" /> Redactar Nueva Noticia
+            {editingId ? (
+              <><Edit size={20} className="text-yellow-600" /> Editar Noticia</>
+            ) : (
+              <><Plus size={20} className="text-red-600" /> Redactar Nueva Noticia</>
+            )}
           </h3>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -248,7 +275,7 @@ const NewsManager = ({ token }) => {
                     <button
                       type="button"
                       onClick={() => { setFormData({ ...formData, imagen: null }); setPreviewUrl(null); }}
-                      className="absolute top-2 right-2 bg-red-600 text-white p-1 rounded-full shadow hover:bg-red-700"
+                      className="absolute top-2 right-2 bg-red-600 text-white p-1 rounded-full shadow hover:bg-red-700 transition"
                     >
                       <X size={16} />
                     </button>
@@ -256,8 +283,8 @@ const NewsManager = ({ token }) => {
                 ) : (
                   <div className="text-center">
                     <Upload className="mx-auto text-gray-400 mb-2" />
-                    <label className="cursor-pointer bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold py-2 px-4 rounded inline-block">
-                      <span>Seleccionar Imagen</span>
+                    <label className="cursor-pointer bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold py-2 px-4 rounded inline-block transition">
+                      <span>{editingId ? "Cambiar Imagen" : "Seleccionar Imagen"}</span>
                       <input type="file" onChange={handleFileChange} className="hidden" accept="image/*" />
                     </label>
                   </div>
@@ -295,9 +322,9 @@ const NewsManager = ({ token }) => {
               <button
                 type="submit"
                 disabled={loading}
-                className={`${theme.primary} text-white px-6 py-2 rounded hover:opacity-90 font-bold flex items-center gap-2`}
+                className={`${editingId ? 'bg-yellow-600 hover:bg-yellow-700' : theme.primary} text-white px-6 py-2 rounded font-bold flex items-center gap-2 transition-colors`}
               >
-                {loading ? "Publicando..." : "Publicar Noticia"}
+                {loading ? "Guardando..." : (editingId ? "Actualizar Noticia" : "Publicar Noticia")}
               </button>
             </div>
           </form>
@@ -317,9 +344,9 @@ const NewsManager = ({ token }) => {
               {posts.map((post) => (
                 <div
                   key={post.id}
-                  className="p-4 border border-gray-100 rounded-lg bg-gray-50 hover:bg-white hover:shadow-md transition relative group"
+                  className={`p-4 border rounded-lg hover:shadow-md transition relative group ${editingId === post.id ? 'border-yellow-400 bg-yellow-50' : 'border-gray-100 bg-gray-50 hover:bg-white'}`}
                 >
-                  <div className="flex justify-between items-start mb-1 pr-6">
+                  <div className="flex justify-between items-start mb-1 pr-14">
                     <span className="text-xs font-bold text-red-600 uppercase">
                       {post.categoria_nombre || "General"}
                     </span>
@@ -330,10 +357,21 @@ const NewsManager = ({ token }) => {
                   <h4 className="font-bold text-[#1B3A57] text-sm leading-tight mb-2">
                     {post.titulo}
                   </h4>
-                  <div className="absolute top-2 right-2 z-10">
+                  
+                  {/* Botones de Acción (Editar y Eliminar) */}
+                  <div className="absolute top-2 right-2 flex gap-1 z-10">
                     <button
+                      type="button"
+                      onClick={() => handleEditClick(post)}
+                      className="p-1.5 text-gray-400 hover:text-white hover:bg-yellow-500 rounded transition-all duration-200 shadow-sm bg-white"
+                      title="Editar publicación"
+                    >
+                      <Edit size={16} />
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => handleDelete(post.id)}
-                      className="p-1.5 text-gray-400 hover:text-white hover:bg-red-600 rounded transition-all duration-200 shadow-sm"
+                      className="p-1.5 text-gray-400 hover:text-white hover:bg-red-600 rounded transition-all duration-200 shadow-sm bg-white"
                       title="Eliminar publicación"
                     >
                       <Trash2 size={16} />
